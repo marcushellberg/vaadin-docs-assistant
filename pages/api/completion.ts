@@ -111,7 +111,7 @@ export default async function handler(
   const searchResult = await pineconeIndex.query({
     queryRequest: {
       vector: embedding,
-      topK: 3,
+      topK: 5,
       includeMetadata: true
     }
   });

@@ -45,7 +45,7 @@ export default function Home() {
         <h1 className="font-bold text-3xl text-gray-700">Hilla AI</h1>
         </div>
         <div className="flex-grow">
-          <ChatWindow messages={messages}/>
+          <ChatWindow messages={messages} loading={loading}/>
         </div>
         <div className="w-full p-4">
           <ChatInput onSendMessage={handleSendQuestion}/>

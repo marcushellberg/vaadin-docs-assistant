@@ -2,36 +2,14 @@
 import React, {useEffect, useRef, useState} from 'react';
 import ChatMessage from "@/components/ChatMessage";
 import {Message} from "@/pages";
+import LoadingIndicator from "@/components/LoadingIndicator";
 
 interface ChatWindowProps {
   messages: Message[];
+  loading: boolean;
 }
 
-export default function ChatWindow({messages}: ChatWindowProps) {
-  // const [chatHistory, setChatHistory] = useState<Message[]>([
-  //   {
-  //     sender: 'user',
-  //     text: 'How do I restrict access to an endpoint?'
-  //   },
-  //   {
-  //     sender: 'bot',
-  //     text: "To restrict access to an endpoint, you can specify role-based access rules as annotations for the endpoint class or its individual methods. For example, you can use the `@RolesAllowed` annotation to restrict access to only users with a specific role. Here's an example:\n" +
-  //       "\n" +
-  //       "```java\n" +
-  //       "@Endpoint\n" +
-  //       "public class MyEndpoint {\n" +
-  //       "  @RolesAllowed(\"ROLE_ADMIN\")\n" +
-  //       "  public void adminOnlyMethod() {\n" +
-  //       "    // Only users with admin role can access\n" +
-  //       "  }\n" +
-  //       "}\n" +
-  //       "```\n" +
-  //       "\n" +
-  //       "In the above example, the `adminOnlyMethod()` method can only be accessed by users with the `ROLE_ADMIN` role. If a user without this role tries to access the method, they will be denied access.\n" +
-  //       "\n" +
-  //       "You can also use the `@PermitAll` annotation to allow any authenticated user to access a method, or the `@AnonymousAllowed` annotation to allow unauthenticated requests."
-  //   }
-  // ]);
+export default function ChatWindow({messages, loading}: ChatWindowProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
 
@@ -47,6 +25,7 @@ export default function ChatWindow({messages}: ChatWindowProps) {
       {messages.map((message, index) => (
         <ChatMessage key={index} message={message.text} sender={message.sender}/>
       ))}
+      {loading && <LoadingIndicator/>}
     </div>
   );
 }
