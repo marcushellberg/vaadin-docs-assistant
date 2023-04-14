@@ -61,7 +61,7 @@ async function getCompletion(query: string, context: string) {
         role: 'user',
         content: codeBlock`
           ${oneLine`
-            Answer all future questions using only the above documentation.
+            Answer all future questions using only the above documentation and your knowledge about the Google Lit library.
             You must also follow the below rules when answering:
           `}
           ${oneLine`

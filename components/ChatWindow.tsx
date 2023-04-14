@@ -10,18 +10,9 @@ interface ChatWindowProps {
 }
 
 export default function ChatWindow({messages, loading}: ChatWindowProps) {
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-
-
-  // Scroll to bottom when new message is added
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
 
   return (
-    <div className="h-full overflow-y-auto" ref={chatContainerRef}>
+    <div className="flex-grow overflow-y-auto">
       {messages.map((message, index) => (
         <ChatMessage key={index} message={message.text} sender={message.sender}/>
       ))}

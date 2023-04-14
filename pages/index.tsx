@@ -41,15 +41,11 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-        <div className="flex w-full justify-center p-4">
+      <div className="flex w-full justify-center p-4 border-b border-gray-300">
         <h1 className="font-bold text-3xl text-gray-700">Hilla AI</h1>
-        </div>
-        <div className="flex-grow">
-          <ChatWindow messages={messages} loading={loading}/>
-        </div>
-        <div className="w-full p-4">
-          <ChatInput onSendMessage={handleSendQuestion}/>
-        </div>
+      </div>
+      <ChatWindow messages={messages} loading={loading}/>
+      <ChatInput onSendMessage={handleSendQuestion}/>
     </div>
   );
 }

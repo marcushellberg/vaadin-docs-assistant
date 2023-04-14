@@ -13,7 +13,7 @@ interface ChatMessageProps {
 export default function ChatMessage({message, sender}: ChatMessageProps) {
   return (
     <div className={`w-full ${
-      sender === 'user' ? 'bg-white border-y border-gray-200' : ''
+      sender === 'user' ? 'bg-white border-b border-gray-300' : ''
     }`}>
       <div
         className="flex gap-4 items-start md:max-w-2xl lg:max-w-2xl xl:max-w-3xl p-4 md:py-6 lg:px-0 m-auto"
