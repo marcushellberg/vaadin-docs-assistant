@@ -1,6 +1,5 @@
 // components/ChatInput.tsx
 import React, {useState} from 'react';
-import 'highlight.js/styles/atom-one-light.css'
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;

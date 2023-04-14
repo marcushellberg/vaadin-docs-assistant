@@ -4,11 +4,13 @@ import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import Image from "next/image";
 import hillaLogo from "../assets/hilla.png";
+import 'highlight.js/styles/atom-one-light.css'
 
 interface ChatMessageProps {
   message: string;
   sender: 'user' | 'bot';
 }
+
 
 export default function ChatMessage({message, sender}: ChatMessageProps) {
   return (
@@ -21,7 +23,7 @@ export default function ChatMessage({message, sender}: ChatMessageProps) {
         {sender === 'bot' ? <Image src={hillaLogo} alt="Hilla AI" className="w-[25px]"/> : <div className="w-[25px]"/>}
 
         <div>
-          <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+          <ReactMarkdown rehypePlugins={[[rehypeHighlight, {ignoreMissing: true}]]}>
             {message}
           </ReactMarkdown>
         </div>
