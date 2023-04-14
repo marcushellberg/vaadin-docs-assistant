@@ -53,7 +53,7 @@ async function getCompletion(query: string, context: string) {
       {
         role: 'user',
         content: codeBlock`
-          Here is the Supabase documentation:
+          Here is the Hilla documentation:
           ${context}
         `
       },
