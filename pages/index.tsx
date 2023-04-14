@@ -3,39 +3,34 @@ import ChatWindow from "@/components/ChatWindow";
 import React, {useState} from "react";
 import ChatInput from "@/components/ChatInput";
 import {CompletionResponse} from "@/pages/api/completion";
+import {ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum} from "openai";
 
 const inter = Inter({subsets: ['latin']})
 
 
-export interface Message {
-  text: string;
-  sender: 'user' | 'bot';
-}
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function handleSendQuestion(question: string) {
-    setMessages([{
-      sender: 'user',
-      text: question
-    }]);
+    const newMessages = [...messages, {
+      role: ChatCompletionRequestMessageRoleEnum.User,
+      content: question
+    }];
+    setMessages(newMessages);
 
     setLoading(true);
 
     const completion: CompletionResponse = await fetch('/api/completion', {
       method: 'POST',
-      body: JSON.stringify({question}),
+      body: JSON.stringify({messages: newMessages}),
       headers: {
         'Content-Type': 'application/json'
       }
     }).then(res => res.json())
 
-    setMessages(prevMessages => [...prevMessages, {
-      sender: 'bot',
-      text: completion.completion
-    }]);
+    setMessages(prevMessages => [...prevMessages, completion.message]);
     setLoading(false);
   }
 

@@ -1,47 +1,109 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-import { PineconeClient } from '@pinecone-database/pinecone';
-import { codeBlock, oneLine } from 'common-tags';
-import { Configuration, OpenAIApi } from 'openai';
-import {VectorOperationsApi} from "@pinecone-database/pinecone/dist/pinecone-generated-ts-fetch";
+import type {NextApiRequest, NextApiResponse} from 'next'
+import {findSimilarDocuments} from "@/scripts/pinecone";
+import {codeBlock, oneLine} from 'common-tags';
+import {createChatCompletion, createEmbedding, moderate} from "@/scripts/openai";
+import {ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum} from "openai";
+import {getChatRequestTokenCount, getMaxTokenCount, tokenizer} from "@/scripts/tokenizer";
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY
-});
 
-const openai = new OpenAIApi(configuration);
-const pinecone = new PineconeClient();
+// This is heavily inspired by the Supabase implementation
+// https://github.dev/supabase/supabase/tree/master/apps/docs/scripts
 
-let index: VectorOperationsApi;
 
-async function getPineconeIndex() {
-  if(!index) {
-    await pinecone.init({
-      apiKey: process.env.PINECONE_API_KEY!,
-      environment: process.env.PINECONE_ENVIRONMENT!,
-    });
-    index = pinecone.Index(process.env.PINECONE_INDEX!);
+export interface CompletionRequest extends NextApiRequest {
+  body: {
+    messages: ChatCompletionRequestMessage[]
   }
-  return index;
-}
-// const index = pinecone.Index(process.env.PINECONE_INDEX!);
-
-async function getEmbedding(text: string) {
-  const response = await openai.createEmbedding({
-    model: 'text-embedding-ada-002',
-    input: text
-  });
-  return response.data.data[0].embedding;
 }
 
-async function getCompletion(query: string, context: string) {
-  const completion = await openai.createChatCompletion({
-    model: 'gpt-3.5-turbo',
-    max_tokens: 1024,
-    temperature: 0,
-    messages: [
-      {
-        role: 'system',
-        content: codeBlock`
+export interface CompletionResponse {
+  message: ChatCompletionRequestMessage
+}
+
+function sanitizeMessages(messages: ChatCompletionRequestMessage[]) {
+  const messageHistory: ChatCompletionRequestMessage[] = messages.map(({role, content}) => {
+    if (role !== ChatCompletionRequestMessageRoleEnum.User && role !== ChatCompletionRequestMessageRoleEnum.Assistant) {
+      throw new Error(`Invalid message role '${role}'`)
+    }
+
+    return {
+      role,
+      content: content.trim(),
+    }
+  })
+  return messageHistory;
+}
+
+function getContextString(sections: string[], maxTokens: number = 1500) {
+  let tokenCount = 0;
+  let contextText = '';
+  for(const section of sections) {
+    tokenCount += tokenizer.encode(section).length;
+    if(tokenCount > maxTokens) break;
+
+    contextText += `${section.trim()}\n---\n`;
+  }
+  return contextText;
+}
+
+/**
+ * Remove context messages until the entire request fits
+ * the max total token count for that model.
+ *
+ * Accounts for both message and completion token counts.
+ */
+function capMessages(
+  initMessages: ChatCompletionRequestMessage[],
+  historyMessages: ChatCompletionRequestMessage[],
+  maxCompletionTokenCount: number,
+  model: string
+) {
+  const maxTotalTokenCount = getMaxTokenCount(model)
+  const cappedHistoryMessages = [...historyMessages]
+  let tokenCount =
+    getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages], model) +
+    maxCompletionTokenCount
+
+  // Remove earlier history messages until we fit
+  while (tokenCount >= maxTotalTokenCount) {
+    cappedHistoryMessages.shift()
+    tokenCount =
+      getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages], model) +
+      maxCompletionTokenCount
+  }
+
+  return [...initMessages, ...cappedHistoryMessages]
+}
+
+export default async function handler(
+  req: CompletionRequest,
+  res: NextApiResponse<CompletionResponse>
+) {
+  // All the non-system messages up until now, including the current question
+  const {messages} = req.body;
+
+  const historyMessages = sanitizeMessages(messages);
+
+  // send all messages to OpenAI for moderation. Throws exception if flagged.
+  await moderate(historyMessages);
+
+  // Extract the last message to get the question
+  const [userMessage] = historyMessages.filter(({role}) => role === ChatCompletionRequestMessageRoleEnum.User).slice(-1)
+
+  // Create an embedding for the user's question
+  const embedding = await createEmbedding(userMessage.content);
+
+  // Find the most similar documents to the user's question
+  const docSections = await findSimilarDocuments(embedding, 10);
+
+  // Get a string of at most 1500 tokens from the most similar documents
+  const contextString = getContextString(docSections, 1500);
+
+  // The messages that set up the context for the question
+  const initMessages: ChatCompletionRequestMessage[] = [
+    {
+      role: ChatCompletionRequestMessageRoleEnum.System,
+      content: codeBlock`
           ${oneLine`
             You are a very enthusiastic Hilla AI who loves
             to help people! Given the following information from
@@ -49,17 +111,17 @@ async function getCompletion(query: string, context: string) {
             only that information, outputted in markdown format.
           `}
         `
-      },
-      {
-        role: 'user',
-        content: codeBlock`
+    },
+    {
+      role: ChatCompletionRequestMessageRoleEnum.User,
+      content: codeBlock`
           Here is the Hilla documentation:
-          ${context}
+          ${contextString}
         `
-      },
-      {
-        role: 'user',
-        content: codeBlock`
+    },
+    {
+      role: ChatCompletionRequestMessageRoleEnum.User,
+      content: codeBlock`
           ${oneLine`
             Answer all future questions using only the above documentation and your knowledge about the Google Lit library.
             You must also follow the below rules when answering:
@@ -82,53 +144,20 @@ async function getCompletion(query: string, context: string) {
             - Always include code snippets if available.
           `}
         `
-      }, {
-        role: 'user',
-        content: query
-      }
-    ]
-  });
-  return completion.data.choices[0].message?.content || '🤷‍♂️';
-}
-
-export interface CompletionRequest extends NextApiRequest {
-  body: {
-    question: string
-  }
-}
-
-export interface CompletionResponse {
-  completion: string
-}
-
-export default async function handler(
-  req: CompletionRequest,
-  res: NextApiResponse<CompletionResponse>
-) {
-  const { question } = req.body;
-  const pineconeIndex = await getPineconeIndex();
-  const embedding = await getEmbedding(question);
-  const searchResult = await pineconeIndex.query({
-    queryRequest: {
-      vector: embedding,
-      topK: 5,
-      includeMetadata: true
     }
-  });
+  ];
 
-  const context = searchResult?.matches?.map((match) => {
-    if(match.metadata && 'text' in match.metadata) {
-      return match.metadata.text;
-    } else {
-      return '';
-    }
-  }).join('\n----\n');
+  const model = 'gpt-3.5-turbo-0301'
+  const maxTokens = 1024
 
-  if(context) {
-    const completion = await getCompletion(question, context);
-    res.status(200).json({ completion })
-  } else {
-    res.status(404);
-  }
+  const completionMessages: ChatCompletionRequestMessage[] = capMessages(
+    initMessages,
+    historyMessages,
+    maxTokens,
+    model
+  );
 
+  const message = await createChatCompletion(completionMessages, model, maxTokens);
+
+  res.status(200).json({message})
 }

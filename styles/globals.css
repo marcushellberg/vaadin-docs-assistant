@@ -5,3 +5,11 @@
 code {
     @apply bg-blue-50 text-gray-800 rounded p-0.5;
 }
+
+p {
+    @apply my-2;
+}
+
+li {
+    @apply list-disc list-inside;
+}
