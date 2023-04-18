@@ -9,6 +9,7 @@ const inter = Inter({subsets: ['latin']})
 export default function Home() {
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [working, setWorking] = useState(false);
 
   async function handleSendQuestion(question: string) {
     if(loading) return;
@@ -20,12 +21,13 @@ export default function Home() {
     setMessages(newMessages);
 
     setLoading(true);
+    setWorking(true);
 
     const response = await fetch('/api/completion', {
         method: 'POST',
         body: JSON.stringify({messages: newMessages}),
         headers: {'Content-Type': 'application/json'}
-      }).then(res => res.json())
+      });
 
     // This data is a ReadableStream
     const data = response.body;
@@ -37,8 +39,7 @@ export default function Home() {
     const decoder = new TextDecoder();
     let done = false;
 
-    setLoading(false)
-
+    setLoading(false);
     setMessages(msg => [...msg, {
       role: ChatCompletionRequestMessageRoleEnum.Assistant,
       content: ''
@@ -48,9 +49,14 @@ export default function Home() {
       const {value, done: doneReading} = await reader.read();
       done = doneReading;
       const chunkValue = decoder.decode(value);
-      // update last message
-      console.log(chunkValue);
+      // add the value to the last message content
+      setMessages(msg => {
+        const lastMessage = msg[msg.length - 1];
+        lastMessage.content += chunkValue;
+        return [...msg.slice(0, -1), lastMessage];
+      });
     }
+    setWorking(false);
   }
 
   return (
@@ -59,7 +65,7 @@ export default function Home() {
         <h1 className="font-bold text-3xl text-gray-700">Hilla AI</h1>
       </div>
       <ChatWindow messages={messages} loading={loading}/>
-      <ChatInput onSendMessage={handleSendQuestion}/>
+      <ChatInput onSendMessage={handleSendQuestion} working={working}/>
     </div>
   );
 }

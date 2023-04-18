@@ -3,7 +3,7 @@ import {findSimilarDocuments} from "@/scripts/pinecone";
 import {codeBlock, oneLine} from 'common-tags';
 import {createEmbedding, moderate, streamChatCompletion} from "@/scripts/openai";
 import {ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum} from "openai";
-import {getChatRequestTokenCount, getMaxTokenCount, getTokens} from "@/scripts/tokenizer";
+// import {getChatRequestTokenCount, getMaxTokenCount, getTokens} from "@/scripts/tokenizer";
 import {NextRequest} from "next/server";
 
 export const config = {
@@ -35,7 +35,7 @@ function getContextString(sections: string[], maxTokens: number = 1500) {
   let tokenCount = 0;
   let contextText = '';
   for (const section of sections) {
-    tokenCount += getTokens(section);
+    tokenCount += section.length/4;
     if (tokenCount > maxTokens) break;
 
     contextText += `${section.trim()}\n---\n`;
@@ -55,8 +55,16 @@ function capMessages(
   maxCompletionTokenCount: number,
   model: string
 ) {
-  const maxTotalTokenCount = getMaxTokenCount(model)
+  const maxTotalTokenCount = 4000;
   const cappedHistoryMessages = [...historyMessages]
+
+  function getChatRequestTokenCount(chatCompletionRequestMessages: ChatCompletionRequestMessage[], model: string) {
+    return chatCompletionRequestMessages.reduce((acc, message) => {
+      acc += message.content.length/4;
+      return acc;
+    }, 0);
+  }
+
   let tokenCount =
     getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages], model) +
     maxCompletionTokenCount

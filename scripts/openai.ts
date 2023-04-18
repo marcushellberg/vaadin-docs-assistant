@@ -5,42 +5,48 @@ const configuration = new Configuration({ apiKey: process.env.OPENAI_API_KEY});
 const openai = new OpenAIApi(configuration);
 
 export async function moderate(messages: ChatCompletionRequestMessage[]) {
+
   const moderationResponses = await Promise.all(
-    messages.map(message => openai.createModeration({input: message.content}))
-  );
+    messages.map(async message => {
+      const res = await fetch('https://api.openai.com/v1/moderations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          input: message.content
+        })
+      });
+      return res.json();
+    }
+  ));
 
   moderationResponses.forEach(response => {
-    const [results] = response.data.results;
+    const [results] = response.results;
     if(results.flagged) throw new Error('Flagged content');
   });
 }
 
 export async function createEmbedding(text: string) {
-  const response = await openai.createEmbedding({
-    model: 'text-embedding-ada-002',
-    input: text
+
+  const response = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'text-embedding-ada-002',
+      input: text
+    })
   });
-  const [{embedding }] = response.data.data;
+  const json = await response.json();
+  const [{embedding }] = json.data;
 
   return embedding;
 }
 
-export async function createChatCompletion(
-  messages: ChatCompletionRequestMessage[],
-  model: string = 'gpt-3.5-turbo',
-  maxTokens: number = 1024
-) {
-  const completion = await openai.createChatCompletion({
-    model,
-    max_tokens: maxTokens,
-    temperature: 0,
-    messages
-  });
-  const [{message}] = completion.data.choices;
-
-  if(!message) throw new Error('No message returned from OpenAI');
-  return message;
-}
 
 export async function streamChatCompletion(
   messages: ChatCompletionRequestMessage[],
@@ -55,6 +61,7 @@ export async function streamChatCompletion(
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
@@ -84,7 +91,6 @@ export async function streamChatCompletion(
               // this is a prefix character (i.e., "\n\n"), do nothing
               return;
             }
-            console.log(`Received: ${text}`);
             // Encode into UInt8 array
             const queue = encoder.encode(text);
             controller.enqueue(queue);

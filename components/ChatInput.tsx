@@ -3,13 +3,16 @@ import React, {useState} from 'react';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
+  working: boolean
 }
 
-export default function ChatInput({onSendMessage}: ChatInputProps) {
+export default function ChatInput({onSendMessage, working}: ChatInputProps) {
   const [message, setMessage] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if(working) return;
+
     if (message.trim()) {
       onSendMessage(message);
       setMessage('');
@@ -26,7 +29,7 @@ export default function ChatInput({onSendMessage}: ChatInputProps) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-r-md" type="submit">
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-r-md" type="submit" disabled={working}>
           Ask
         </button>
       </form>
