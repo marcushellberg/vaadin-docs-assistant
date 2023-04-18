@@ -50,7 +50,6 @@ export async function createEmbedding(text: string) {
 
 export async function streamChatCompletion(
   messages: ChatCompletionRequestMessage[],
-  model: string = 'gpt-3.5-turbo',
   maxTokens: number = 1024
 ) {
   const encoder = new TextEncoder();
@@ -65,7 +64,7 @@ export async function streamChatCompletion(
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
     },
     body: JSON.stringify({
-      model,
+      model: 'gpt-3.5-turbo',
       max_tokens: maxTokens,
       temperature: 0,
       messages,

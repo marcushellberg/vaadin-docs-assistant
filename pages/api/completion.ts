@@ -5,6 +5,7 @@ import {createEmbedding, moderate, streamChatCompletion} from "@/scripts/openai"
 import {ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum} from "openai";
 // import {getChatRequestTokenCount, getMaxTokenCount, getTokens} from "@/scripts/tokenizer";
 import {NextRequest} from "next/server";
+import {countTokens, getChatRequestTokenCount, MAX_TOKENS} from "@/scripts/tokenizer";
 
 export const config = {
   runtime: "edge"
@@ -13,9 +14,7 @@ export const config = {
 // This is heavily inspired by the Supabase implementation
 // https://github.dev/supabase/supabase/tree/master/apps/docs/scripts
 
-
-const model = 'gpt-3.5-turbo-0301';
-const maxTokens = 1024;
+const MAX_RESPONSE_TOKENS = 1500;
 
 function sanitizeMessages(messages: ChatCompletionRequestMessage[]) {
   const messageHistory: ChatCompletionRequestMessage[] = messages.map(({role, content}) => {
@@ -31,17 +30,18 @@ function sanitizeMessages(messages: ChatCompletionRequestMessage[]) {
   return messageHistory;
 }
 
-function getContextString(sections: string[], maxTokens: number = 1500) {
+async function getContextString(sections: string[], maxResponseTokens: number = 1500) {
   let tokenCount = 0;
   let contextText = '';
-  for (const section of sections) {
-    tokenCount += section.length/4;
-    if (tokenCount > maxTokens) break;
+  for(const section of sections) {
+    tokenCount += await countTokens(section);
+    if(tokenCount > maxResponseTokens) break;
 
     contextText += `${section.trim()}\n---\n`;
   }
   return contextText;
 }
+
 
 /**
  * Remove context messages until the entire request fits
@@ -49,36 +49,27 @@ function getContextString(sections: string[], maxTokens: number = 1500) {
  *
  * Accounts for both message and completion token counts.
  */
-function capMessages(
+async function capMessages(
   initMessages: ChatCompletionRequestMessage[],
-  historyMessages: ChatCompletionRequestMessage[],
-  maxCompletionTokenCount: number,
-  model: string
+  historyMessages: ChatCompletionRequestMessage[]
 ) {
-  const maxTotalTokenCount = 4000;
+  const maxTotalTokenCount = MAX_TOKENS;
   const cappedHistoryMessages = [...historyMessages]
-
-  function getChatRequestTokenCount(chatCompletionRequestMessages: ChatCompletionRequestMessage[], model: string) {
-    return chatCompletionRequestMessages.reduce((acc, message) => {
-      acc += message.content.length/4;
-      return acc;
-    }, 0);
-  }
-
   let tokenCount =
-    getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages], model) +
-    maxCompletionTokenCount
+    await getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages]) +
+    MAX_RESPONSE_TOKENS
 
   // Remove earlier history messages until we fit
   while (tokenCount >= maxTotalTokenCount) {
     cappedHistoryMessages.shift()
     tokenCount =
-      getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages], model) +
-      maxCompletionTokenCount
+      await getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages]) +
+      MAX_RESPONSE_TOKENS
   }
 
   return [...initMessages, ...cappedHistoryMessages]
 }
+
 
 async function getMessagesWithContext(messages: ChatCompletionRequestMessage[]) {
   const historyMessages = sanitizeMessages(messages);
@@ -96,7 +87,7 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[]) 
   const docSections = await findSimilarDocuments(embedding, 10);
 
   // Get a string of at most 1500 tokens from the most similar documents
-  const contextString = getContextString(docSections, 1500);
+  const contextString = await getContextString(docSections, 1500);
 
   // The messages that set up the context for the question
   const initMessages: ChatCompletionRequestMessage[] = [
@@ -148,9 +139,7 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[]) 
 
   return capMessages(
     initMessages,
-    historyMessages,
-    maxTokens,
-    model
+    historyMessages
   );
 }
 
@@ -160,6 +149,6 @@ export default async function handler(req: NextRequest) {
     messages: ChatCompletionRequestMessage[]
   };
   const completionMessages = await getMessagesWithContext(messages);
-  const stream = await streamChatCompletion(completionMessages, model, maxTokens);
+  const stream = await streamChatCompletion(completionMessages, MAX_RESPONSE_TOKENS);
   return new Response(stream);
 }
