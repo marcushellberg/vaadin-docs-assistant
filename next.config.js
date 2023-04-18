@@ -1,15 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: true,
-    webpack(config, { isServer, dev }) {
+    webpack: (config) => {
         config.experiments = {
             asyncWebAssembly: true,
             layers: true,
             topLevelAwait: true,
-        };
-
-        return config;
-    },
+        }
+        return config
+    }
 }
 
 module.exports = nextConfig
+

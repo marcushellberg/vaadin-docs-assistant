@@ -1,8 +1,23 @@
 import {ChatCompletionRequestMessage} from "openai";
-import {get_encoding} from "@dqbd/tiktoken";
+// @ts-expect-error
+import wasm from "@dqbd/tiktoken/lite/tiktoken_bg.wasm?module";
+import model from "@dqbd/tiktoken/encoders/cl100k_base.json";
+import {init, Tiktoken} from "@dqbd/tiktoken/lite/init";
 
+// You have to save the result of a top-level async for unknown reasons
+const wasmInit = await init(async (imports) => {
+  return WebAssembly.instantiate(wasm, imports)
+});
 
-export const tokenizer = get_encoding("cl100k_base")
+export const tokenizer = new Tiktoken(
+  model.bpe_ranks,
+  model.special_tokens,
+  model.pat_str
+);
+
+export function getTokens(text: string) {
+  return tokenizer.encode(text).length;
+}
 
 /**
  * Count the tokens for multi-message chat completion requests

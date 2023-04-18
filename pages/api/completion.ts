@@ -1,24 +1,21 @@
 import type {NextApiRequest, NextApiResponse} from 'next'
 import {findSimilarDocuments} from "@/scripts/pinecone";
 import {codeBlock, oneLine} from 'common-tags';
-import {createChatCompletion, createEmbedding, moderate} from "@/scripts/openai";
+import {createEmbedding, moderate, streamChatCompletion} from "@/scripts/openai";
 import {ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum} from "openai";
-import {getChatRequestTokenCount, getMaxTokenCount, tokenizer} from "@/scripts/tokenizer";
+import {getChatRequestTokenCount, getMaxTokenCount, getTokens} from "@/scripts/tokenizer";
+import {NextRequest} from "next/server";
 
+export const config = {
+  runtime: "edge"
+};
 
 // This is heavily inspired by the Supabase implementation
 // https://github.dev/supabase/supabase/tree/master/apps/docs/scripts
 
 
-export interface CompletionRequest extends NextApiRequest {
-  body: {
-    messages: ChatCompletionRequestMessage[]
-  }
-}
-
-export interface CompletionResponse {
-  message: ChatCompletionRequestMessage
-}
+const model = 'gpt-3.5-turbo-0301';
+const maxTokens = 1024;
 
 function sanitizeMessages(messages: ChatCompletionRequestMessage[]) {
   const messageHistory: ChatCompletionRequestMessage[] = messages.map(({role, content}) => {
@@ -37,9 +34,9 @@ function sanitizeMessages(messages: ChatCompletionRequestMessage[]) {
 function getContextString(sections: string[], maxTokens: number = 1500) {
   let tokenCount = 0;
   let contextText = '';
-  for(const section of sections) {
-    tokenCount += tokenizer.encode(section).length;
-    if(tokenCount > maxTokens) break;
+  for (const section of sections) {
+    tokenCount += getTokens(section);
+    if (tokenCount > maxTokens) break;
 
     contextText += `${section.trim()}\n---\n`;
   }
@@ -75,13 +72,7 @@ function capMessages(
   return [...initMessages, ...cappedHistoryMessages]
 }
 
-export default async function handler(
-  req: CompletionRequest,
-  res: NextApiResponse<CompletionResponse>
-) {
-  // All the non-system messages up until now, including the current question
-  const {messages} = req.body;
-
+async function getMessagesWithContext(messages: ChatCompletionRequestMessage[]) {
   const historyMessages = sanitizeMessages(messages);
 
   // send all messages to OpenAI for moderation. Throws exception if flagged.
@@ -147,17 +138,20 @@ export default async function handler(
     }
   ];
 
-  const model = 'gpt-3.5-turbo-0301'
-  const maxTokens = 1024
-
-  const completionMessages: ChatCompletionRequestMessage[] = capMessages(
+  return capMessages(
     initMessages,
     historyMessages,
     maxTokens,
     model
   );
+}
 
-  const message = await createChatCompletion(completionMessages, model, maxTokens);
-
-  res.status(200).json({message})
+export default async function handler(req: NextRequest) {
+  // All the non-system messages up until now, including the current question
+  const {messages} = (await req.json()) as {
+    messages: ChatCompletionRequestMessage[]
+  };
+  const completionMessages = await getMessagesWithContext(messages);
+  const stream = await streamChatCompletion(completionMessages, model, maxTokens);
+  return new Response(stream);
 }
