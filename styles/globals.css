@@ -13,3 +13,7 @@ p {
 li {
     @apply list-disc list-inside;
 }
+
+pre, code {
+    @apply max-w-full overflow-x-scroll;
+}

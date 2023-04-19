@@ -62,10 +62,11 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <div className="flex flex-col w-full items-center justify-center p-4 border-b border-gray-300">
-        <h1 className="font-bold text-3xl text-gray-700">Hilla AI</h1>
+        <h1 className="font-bold text-3xl text-gray-700">Hilla Docs Assistant 🤖</h1>
       </div>
       <ChatWindow messages={messages} loading={loading}/>
       <ChatInput onSendMessage={handleSendQuestion} working={working}/>
+      <div className="p-2 text-xs text-center">Note: this is an experimental app, there are no guarantees for correctness. Expect errors and downtime.</div>
     </div>
   );
 }

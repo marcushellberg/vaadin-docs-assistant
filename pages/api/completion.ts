@@ -30,15 +30,16 @@ function sanitizeMessages(messages: ChatCompletionRequestMessage[]) {
   return messageHistory;
 }
 
-async function getContextString(sections: string[], maxResponseTokens: number = 1500) {
+async function getContextString(sections: string[], maxContextTokens: number = 1500) {
   let tokenCount = 0;
   let contextText = '';
   for(const section of sections) {
     tokenCount += await countTokens(section);
-    if(tokenCount > maxResponseTokens) break;
+    if(tokenCount > maxContextTokens) break;
 
     contextText += `${section.trim()}\n---\n`;
   }
+  console.log(contextText);
   return contextText;
 }
 
