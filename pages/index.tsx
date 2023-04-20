@@ -8,19 +8,16 @@ const inter = Inter({subsets: ['latin']})
 
 export default function Home() {
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
-  const [loading, setLoading] = useState(false);
   const [working, setWorking] = useState(false);
 
   async function handleSendQuestion(question: string) {
-    if(loading) return;
+    if(working) return;
 
     const newMessages = [...messages, {
       role: ChatCompletionRequestMessageRoleEnum.User,
       content: question
     }];
     setMessages(newMessages);
-
-    setLoading(true);
     setWorking(true);
 
     const response = await fetch('/api/completion', {
@@ -39,7 +36,6 @@ export default function Home() {
     const decoder = new TextDecoder();
     let done = false;
 
-    setLoading(false);
     setMessages(msg => [...msg, {
       role: ChatCompletionRequestMessageRoleEnum.Assistant,
       content: ''
@@ -64,7 +60,7 @@ export default function Home() {
       <div className="flex flex-col w-full items-center justify-center p-4 border-b border-gray-300">
         <h1 className="font-bold text-3xl text-gray-700">Hilla Docs Assistant 🤖</h1>
       </div>
-      <ChatWindow messages={messages} loading={loading}/>
+      <ChatWindow messages={messages}/>
       <ChatInput onSendMessage={handleSendQuestion} working={working}/>
       <div className="p-2 text-xs text-center">Note: this is an experimental app, there are no guarantees for correctness. Expect errors and downtime.</div>
     </div>

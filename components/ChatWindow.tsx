@@ -1,15 +1,13 @@
 // components/ChatWindow.tsx
 import React, {useEffect, useRef } from 'react';
 import ChatMessage from "@/components/ChatMessage";
-import LoadingIndicator from "@/components/LoadingIndicator";
 import {ChatCompletionRequestMessage} from "openai";
 
 interface ChatWindowProps {
   messages: ChatCompletionRequestMessage[];
-  loading: boolean;
 }
 
-export default function ChatWindow({ messages, loading }: ChatWindowProps) {
+export default function ChatWindow({ messages }: ChatWindowProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -23,7 +21,6 @@ export default function ChatWindow({ messages, loading }: ChatWindowProps) {
       {messages.map((message, index) => (
         <ChatMessage key={index} content={message.content} role={message.role} />
       ))}
-      {loading && <LoadingIndicator />}
     </div>
   );
 }
