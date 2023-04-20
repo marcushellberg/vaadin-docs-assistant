@@ -72,13 +72,13 @@ export async function streamChatCompletion(
     })
   });
 
+  // See https://vercel.com/blog/gpt-3-app-next-js-vercel-edge-functions#edge-functions-with-streaming
   const stream = new ReadableStream({
     async start(controller) {
       // callback
       function onParse(event: ParsedEvent | ReconnectInterval) {
         if (event.type === "event") {
           const data = event.data;
-          // https://beta.openai.com/docs/api-reference/completions/create#completions/create-stream
           if (data === "[DONE]") {
             controller.close();
             return;

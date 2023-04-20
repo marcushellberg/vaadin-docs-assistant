@@ -10,21 +10,17 @@ export default function ChatInput({onSendMessage, working}: ChatInputProps) {
   const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const textFieldChanged = (element: HTMLTextAreaElement) => {
-    setMessage(element.value);
-
-    element.style.height = 'auto';
-    element.style.height = `${element.scrollHeight}px`;
-  };
 
   useEffect(() => {
     if (textareaRef.current) {
-      textFieldChanged(textareaRef.current);
+      const element = textareaRef.current;
+      element.style.height = 'auto';
+      element.style.height = `${element.scrollHeight}px`;
     }
-  }, []);
+  }, [message]);
 
   function handleKeyPress(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && (e.shiftKey || e.metaKey)) {
+    if (e.key === 'Enter' && !(e.shiftKey || e.metaKey)) {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -49,7 +45,7 @@ export default function ChatInput({onSendMessage, working}: ChatInputProps) {
           className="resize-none w-full p-4 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
           placeholder="Type your text here"
           value={message}
-          onChange={(e) => textFieldChanged(e.target)}
+          onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyPress}
         />
         <button

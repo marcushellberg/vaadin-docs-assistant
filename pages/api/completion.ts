@@ -114,11 +114,14 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[]) 
       role: ChatCompletionRequestMessageRoleEnum.User,
       content: codeBlock`
           ${oneLine`
-            Answer all future questions using only the above documentation and your knowledge about the Google Lit library.
+            Answer all future questions using only the above documentation and your knowledge of the Google Lit library.
             You must also follow the below rules when answering:
           `}
           ${oneLine`
             - Do not make up answers that are not provided in the documentation.
+          `}
+          ${oneLine`
+            - Use vaadin- prefixed components whenever available instead of standard HTML elements.
           `}
           ${oneLine`
             - If you are unsure and the answer is not explicitly written

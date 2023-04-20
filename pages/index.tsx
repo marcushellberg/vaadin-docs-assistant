@@ -20,6 +20,7 @@ export default function Home() {
     setMessages(newMessages);
     setWorking(true);
 
+    // Based on https://vercel.com/blog/gpt-3-app-next-js-vercel-edge-functions#edge-functions-with-streaming
     const response = await fetch('/api/completion', {
         method: 'POST',
         body: JSON.stringify({messages: newMessages}),
