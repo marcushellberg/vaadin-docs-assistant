@@ -42,7 +42,7 @@ export default function ChatInput({onSendMessage, working}: ChatInputProps) {
       <form className="flex w-full relative" onSubmit={handleSubmit} >
         <textarea
           ref={textareaRef}
-          className="resize-none w-full p-4 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="resize-none w-full p-4 pr-14 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
           placeholder="Type your text here"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
