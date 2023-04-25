@@ -1,6 +1,6 @@
 import {QueryResponse} from "@pinecone-database/pinecone/dist/pinecone-generated-ts-fetch/index.js";
 
-export async function findSimilarDocuments(embedding: number[], maxResults: number): Promise<string[]> {
+export async function findSimilarDocuments(embedding: number[], maxResults: number, namespace: string): Promise<string[]> {
 
   const result = await fetch('https://docs-56ee546.svc.us-west1-gcp.pinecone.io/query', {
     method: 'POST',
@@ -12,7 +12,8 @@ export async function findSimilarDocuments(embedding: number[], maxResults: numb
     body: JSON.stringify({
       vector: embedding,
       topK: maxResults,
-      includeMetadata: true
+      includeMetadata: true,
+      namespace
     })
   });
 

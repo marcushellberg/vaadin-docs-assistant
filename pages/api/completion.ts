@@ -72,7 +72,7 @@ async function capMessages(
 }
 
 
-async function getMessagesWithContext(messages: ChatCompletionRequestMessage[]) {
+async function getMessagesWithContext(messages: ChatCompletionRequestMessage[], frontend: string) {
   const historyMessages = sanitizeMessages(messages);
 
   // send all messages to OpenAI for moderation. Throws exception if flagged.
@@ -81,11 +81,11 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[]) 
   // Extract the last message to get the question
   const [userMessage] = historyMessages.filter(({role}) => role === ChatCompletionRequestMessageRoleEnum.User).slice(-1)
 
-  // Create an embedding for the user's question
-  const embedding = await createEmbedding(userMessage.content);
+  // Create an embedding for the user's question. Replace newlines with spaces per OpenAI's recommendation.
+  const embedding = await createEmbedding(userMessage.content.replace(/\n/g, ' '));
 
   // Find the most similar documents to the user's question
-  const docSections = await findSimilarDocuments(embedding, 10);
+  const docSections = await findSimilarDocuments(embedding, 10, frontend);
 
   // Get a string of at most 1500 tokens from the most similar documents
   const contextString = await getContextString(docSections, 1500);
@@ -114,7 +114,7 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[]) 
       role: ChatCompletionRequestMessageRoleEnum.User,
       content: codeBlock`
           ${oneLine`
-            Answer all future questions using only the above documentation and your knowledge of the Google Lit library.
+            Answer all future questions using only the above documentation.
             You must also follow the below rules when answering:
           `}
           ${oneLine`
@@ -149,10 +149,11 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[]) 
 
 export default async function handler(req: NextRequest) {
   // All the non-system messages up until now, including the current question
-  const {messages} = (await req.json()) as {
-    messages: ChatCompletionRequestMessage[]
+  const {messages, frontend} = (await req.json()) as {
+    messages: ChatCompletionRequestMessage[],
+    frontend: string
   };
-  const completionMessages = await getMessagesWithContext(messages);
+  const completionMessages = await getMessagesWithContext(messages, frontend);
   const stream = await streamChatCompletion(completionMessages, MAX_RESPONSE_TOKENS);
   return new Response(stream);
 }

@@ -20,9 +20,9 @@ export async function moderate(messages: ChatCompletionRequestMessage[]) {
       });
       return res.json();
     }
-  ));
+  )).catch(err => console.error(err));
 
-  moderationResponses.forEach(response => {
+  moderationResponses?.forEach(response => {
     const [results] = response.results;
     if(results.flagged) throw new Error('Flagged content');
   });
