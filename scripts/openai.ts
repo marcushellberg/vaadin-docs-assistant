@@ -38,7 +38,8 @@ export async function createEmbedding(text: string) {
     },
     body: JSON.stringify({
       model: 'text-embedding-ada-002',
-      input: text
+      // Replace newlines with spaces per OpenAI's recommendation.
+      input: text.replace(/\n/g, ' ')
     })
   });
   const json = await response.json();

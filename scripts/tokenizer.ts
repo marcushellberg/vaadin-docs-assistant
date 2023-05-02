@@ -4,7 +4,7 @@ import wasm from "@dqbd/tiktoken/lite/tiktoken_bg.wasm?module";
 import model from "@dqbd/tiktoken/encoders/cl100k_base.json";
 import {init, Tiktoken} from "@dqbd/tiktoken/lite/init";
 
-export const MAX_TOKENS = 4097;
+export const MAX_TOKENS = 4096;
 let _tokenizer: Tiktoken;
 
 
