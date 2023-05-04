@@ -97,9 +97,9 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[], 
       role: ChatCompletionRequestMessageRoleEnum.System,
       content: codeBlock`
           ${oneLine`
-            You are Hilla AI. You love to help developers! 
-            Answer the user's question given the following
-            information from the Hilla documentation.
+            You are a Hilla Docs assistant. You love to help developers! 
+            Answer the user's question using information from the Hilla 
+            documentation.
           `}
         `
     },
@@ -107,9 +107,9 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[], 
       role: ChatCompletionRequestMessageRoleEnum.User,
       content: codeBlock`
           Here is the Hilla documentation:
-          """
+          ===
           ${contextString}
-          """
+          ===
         `
     },
     {
@@ -133,8 +133,7 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[], 
               "Sorry, I don't know how to help with that"
           `}
           ${oneLine`
-            - Prefer splitting your response into 
-              multiple paragraphs
+            - Prefer splitting your response into multiple paragraphs
           `}
           ${oneLine`
             - Output as markdown
