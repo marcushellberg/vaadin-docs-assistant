@@ -13,7 +13,7 @@ export const config = {
 // This is heavily inspired by the Supabase implementation
 // https://github.dev/supabase/supabase/tree/master/apps/docs/scripts
 
-const MAX_RESPONSE_TOKENS = 2560;
+const MAX_RESPONSE_TOKENS = 1024;
 
 function sanitizeMessages(messages: ChatCompletionRequestMessage[]) {
   const messageHistory: ChatCompletionRequestMessage[] = messages.map(({role, content}) => {
@@ -52,18 +52,24 @@ async function capMessages(
   initMessages: ChatCompletionRequestMessage[],
   historyMessages: ChatCompletionRequestMessage[]
 ) {
-  const maxTotalTokenCount = MAX_TOKENS;
+  const availableTokens = MAX_TOKENS - MAX_RESPONSE_TOKENS;
   const cappedHistoryMessages = [...historyMessages]
   let tokenCount =
-    await getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages]) +
-    MAX_RESPONSE_TOKENS
+    await getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages])
+
+  console.log(`Capping messages. Starting at ${tokenCount} tokens (max: ${availableTokens})`);
+  console.log(JSON.stringify({
+    initMessages,
+    cappedHistoryMessages
+  }, null, 2))
 
   // Remove earlier history messages until we fit
-  while (tokenCount >= maxTotalTokenCount) {
+  while (tokenCount >= availableTokens) {
+    if(cappedHistoryMessages.length === 1) throw new Error('Only user question left, cannot remove more messages');
+
     cappedHistoryMessages.shift()
     tokenCount =
-      await getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages]) +
-      MAX_RESPONSE_TOKENS
+      await getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages])
   }
 
   return [...initMessages, ...cappedHistoryMessages]
@@ -89,19 +95,18 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[], 
   const docSections = await findSimilarDocuments(embedding, 10, frontend);
 
   // Get at most 1536 tokens of documentation as context
+  // TODO: take the history into account as well?
   const contextString = await getContextString(docSections, 1536);
 
   // The initial messages sets up the context and rules
   const initMessages: ChatCompletionRequestMessage[] = [
     {
       role: ChatCompletionRequestMessageRoleEnum.System,
-      content: codeBlock`
-          ${oneLine`
+      content: oneLine`
             You are a helpful AI assistant. You love to help developers! 
             Answer the user's question using information from the 
             documentation.
-          `}
-        `
+          `
     },
     {
       role: ChatCompletionRequestMessageRoleEnum.User,

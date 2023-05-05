@@ -37,7 +37,7 @@ export async function getChatRequestTokenCount(messages: ChatCompletionRequestMe
   const tokens = await Promise.all(messages.map(message => getMessageTokenCount(message)));
   const numTokens = tokens.reduce((acc, tkns) => acc + tkns, 0)
 
-  return numTokens + tokensPerRequest
+  return numTokens + tokensPerRequest;
 }
 
 /**
@@ -52,7 +52,7 @@ export async function getMessageTokenCount(message: ChatCompletionRequestMessage
 
   let tokens = tokensPerMessage;
 
-  for(const entry in Object.entries(message)){
+  for(const entry of Object.entries(message)){
     const [key, value] = entry;
     tokens += await countTokens(value);
     if (key === 'name') {

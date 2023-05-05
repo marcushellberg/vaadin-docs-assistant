@@ -64,6 +64,7 @@ export async function streamChatCompletion(
 
   let counter = 0;
 
+  try {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -122,4 +123,9 @@ export async function streamChatCompletion(
   });
 
   return stream;
+
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
 }
