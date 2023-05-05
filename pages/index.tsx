@@ -9,7 +9,7 @@ const inter = Inter({subsets: ['latin']})
 export default function Home() {
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
   const [working, setWorking] = useState(false);
-  const [frontend, setFrontend] = useState('react');
+  const [frontend, setFrontend] = useState('flow');
 
   async function handleSendQuestion(question: string) {
     if (working) return;
@@ -63,14 +63,15 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <div className="flex flex-col gap-4 w-full items-center justify-center p-4 border-b border-gray-300">
-        <h1 className="font-bold  text-3xl text-gray-700">Hilla Docs Assistant 🤖</h1>
+        <h1 className="font-bold  text-3xl text-gray-700">Vaadin Flow & Hilla Docs Assistant 🤖</h1>
         <div className="flex gap-8">
           <select className="p-1 border border-gray-300 rounded-md" value={frontend} onChange={e => {
             setFrontend(e.target.value);
             setMessages([]);
           }}>
-            <option value="react">React</option>
-            <option value="lit">Lit</option>
+            <option value="flow">Flow</option>
+            <option value="hilla-react">Hilla React</option>
+            <option value="hilla-lit">Hilla Lit</option>
           </select>
           <button className="py-1 px-2 border border-gray-300 rounded-md" onClick={() => setMessages([])}>Reset</button>
         </div>

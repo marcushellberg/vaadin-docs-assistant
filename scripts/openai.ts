@@ -30,22 +30,27 @@ export async function moderate(messages: ChatCompletionRequestMessage[]) {
 
 export async function createEmbedding(text: string) {
 
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'text-embedding-ada-002',
-      // Replace newlines with spaces per OpenAI's recommendation.
-      input: text.replace(/\n/g, ' ')
-    })
-  });
-  const json = await response.json();
-  const [{embedding }] = json.data;
+  try {
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-ada-002',
+        // Replace newlines with spaces per OpenAI's recommendation.
+        input: text.replace(/\n/g, ' ')
+      })
+    });
+    const json = await response.json();
+    const [{embedding}] = json.data;
 
-  return embedding;
+    return embedding;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
 }
 
 
@@ -53,6 +58,7 @@ export async function streamChatCompletion(
   messages: ChatCompletionRequestMessage[],
   maxTokens: number = 1024
 ) {
+  console.log('Getting completion');
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
@@ -91,6 +97,9 @@ export async function streamChatCompletion(
               // this is a prefix character (i.e., "\n\n"), do nothing
               return;
             }
+
+            console.log(`Received ${text}`);
+
             // Encode into UInt8 array
             const queue = encoder.encode(text);
             controller.enqueue(queue);

@@ -97,8 +97,8 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[], 
       role: ChatCompletionRequestMessageRoleEnum.System,
       content: codeBlock`
           ${oneLine`
-            You are a Hilla Docs assistant. You love to help developers! 
-            Answer the user's question using information from the Hilla 
+            You are a helpful AI assistant. You love to help developers! 
+            Answer the user's question using information from the 
             documentation.
           `}
         `
@@ -106,7 +106,7 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[], 
     {
       role: ChatCompletionRequestMessageRoleEnum.User,
       content: codeBlock`
-          Here is the Hilla documentation:
+          Here is the documentation:
           ===
           ${contextString}
           ===
@@ -117,8 +117,7 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[], 
       content: codeBlock`
           ${oneLine`
             Answer all future questions using only the above        
-            documentation and your knowledge of the 
-            ${frontend === 'react' ? 'React' : 'Lit'} library
+            documentation.
           `}
           ${oneLine`
             You must also follow the below rules when answering:
