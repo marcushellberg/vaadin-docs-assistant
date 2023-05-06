@@ -98,9 +98,6 @@ export async function streamChatCompletion(
               // this is a prefix character (i.e., "\n\n"), do nothing
               return;
             }
-
-            console.log(`Received ${text}`);
-
             // Encode into UInt8 array
             const queue = encoder.encode(text);
             controller.enqueue(queue);
