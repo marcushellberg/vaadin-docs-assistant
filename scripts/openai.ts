@@ -58,7 +58,7 @@ export async function streamChatCompletion(
   messages: ChatCompletionRequestMessage[],
   maxTokens: number = 1024
 ) {
-  console.log('Getting completion');
+
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 

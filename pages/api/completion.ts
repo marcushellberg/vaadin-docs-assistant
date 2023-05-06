@@ -57,12 +57,6 @@ async function capMessages(
   let tokenCount =
     await getChatRequestTokenCount([...initMessages, ...cappedHistoryMessages])
 
-  console.log(`Capping messages. Starting at ${tokenCount} tokens (max: ${availableTokens})`);
-  console.log(JSON.stringify({
-    initMessages,
-    cappedHistoryMessages
-  }, null, 2))
-
   // Remove earlier history messages until we fit
   while (tokenCount >= availableTokens) {
     if(cappedHistoryMessages.length === 1) throw new Error('Only user question left, cannot remove more messages');
@@ -104,7 +98,7 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[], 
       role: ChatCompletionRequestMessageRoleEnum.System,
       content: oneLine`
             You are a helpful AI assistant. You love to help developers! 
-            Answer the user's question using information from the 
+            Answer the user's question with the help of the information in the 
             documentation.
           `
     },
@@ -121,20 +115,7 @@ async function getMessagesWithContext(messages: ChatCompletionRequestMessage[], 
       role: ChatCompletionRequestMessageRoleEnum.User,
       content: codeBlock`
           ${oneLine`
-            Answer all future questions using only the above        
-            documentation.
-          `}
-          ${oneLine`
             You must also follow the below rules when answering:
-          `}
-          ${oneLine`
-            - Do not make up answers that are not provided 
-              in the documentation 
-          `}
-          ${oneLine`
-            - If you are unsure and the answer is not explicitly 
-              written in the documentation context, say 
-              "Sorry, I don't know how to help with that"
           `}
           ${oneLine`
             - Prefer splitting your response into multiple paragraphs
